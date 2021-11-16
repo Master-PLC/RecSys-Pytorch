@@ -8,20 +8,25 @@
 @Version      :1.0
 '''
 
+import os
 import random
 
 import numpy as np
 import torch
 
-SEED = 1024
 
+def init_seed(seed: int, cuda: bool, gpus: str) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
-def init_seed():
-    random.seed(SEED)
-    np.random.seed(SEED)
+    if cuda:
+        print("using GPU to train.")
 
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ['CUDA_VISIBLE_DEVICES'] = gpus
+
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True

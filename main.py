@@ -11,68 +11,113 @@
 import argparse
 import os
 
+from torch.utils.data import DataLoader
+
+from config.config import Configurable
 from data.preprocess import preprocess
+from data.utils import check_dir
+from iterator.data_iterator import DataIterator
+from utils.model_map import get_model_class, get_model_prefix
 from utils.seed_init import init_seed
+
+
+def data_preprocess():
+    """
+    Description::对原始数据集进行前处理，生成训练/验证/测试样本
+    """
+
+    if not config.preprocess:
+        preprocess(config.raw_data_dir,
+                   config.processed_data_dir, config.dataset)
+
+
+def update_arguments():
+    check_dir(config.save_dir)
+    config.save_dir = os.path.join(config.save_dir, config.dataset)
+    check_dir(config.save_dir)
+    config.save_dir = os.path.join(config.save_dir, config.model_name.lower())
+    check_dir(config.save_dir)
+
+    if config.dataset == 'taobao':
+        config.item_count = 1708531
+        config.test_iter = 1000
+    if config.dataset == 'ml1m':
+        config.category_num = 2
+        config.topic_num = 10
+        config.item_count = 3706
+        config.test_iter = 500
+    elif config.dataset == 'book':
+        config.item_count = 367983
+        config.test_iter = 1000
+
+    best_model_prefix = get_model_prefix(config)
+    config.save_path = os.path.join(
+        config.save_dir, best_model_prefix+config.suffix)
+
+
+def load_data():
+    train_dataset = DataIterator(config.train_fp, shuffle=config.shuffle)
+    valid_dataset = DataIterator(config.valid_fp)
+    test_dataset = DataIterator(config.test_fp)
+
+    train_loader = DataLoader(dataset=train_dataset, batch_size=config.batch_size,
+                              num_workers=config.num_workers, pin_memory=config.pin_memory, drop_last=False)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=config.eval_batch_size,
+                              num_workers=config.num_workers, pin_memory=config.pin_memory, drop_last=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=config.eval_batch_size,
+                             num_workers=config.num_workers, pin_memory=config.pin_memory, drop_last=True)
+
+    return train_loader, valid_loader, test_loader
+
+
+def load_model():
+    model = None
+    model_name = config.model_name
+    print(f"loading {model_name} model......")
+    model_class = get_model_class(model_name)
+    model = model_class(config)
+    print(model)
+
+    if config.cuda:
+        # if torch.cuda.device_count() > 1:
+        #    model = nn.DataParallel(model)
+        model = model.cuda()
+
+    return model
+
+
+def start_train(model, train_loader, valid_loader, test_loader):
+    # print("\n cpu_count \n", mu.cpu_count())
+    # torch.set_num_threads(config.num_threads)
+    model.train()
+    # if os.path.exists("./Test_Result.txt"):
+    #     os.remove("./Test_Result.txt")
+    print(f"{config.model_name} training start......")
+
+
+def main():
+    """
+    Description::主函数
+    """
+
+    data_preprocess()
+    update_arguments()
+    train_loader, valid_loader, test_loader = load_data()
+    model = load_model()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Pytorch Practice of Recommendation Systems.")
-    parser.add_argument('--init_seed', type=bool, default=True,
-                        help="Whether to initialize the seed(default: 1024).")
-    parser.add_argument('--datafile_dir', type=str, default="./data",
-                        help="The folder where the data files are located.")
-    parser.add_argument('--dataset', type=str, default="ml-1m",
-                        help="Name of the dataset to be used.")
-    parser.add_argument('--raw_data', type=str, default="raw",
-                        help="The folder where th raw data is located.")
-    parser.add_argument('--processed_data', type=str, default="processed",
-                        help="The folder where th processed data is located.")
-    parser.add_argument('--preprocess', type=bool, default=True,
-                        help="Whether to preprocess the data.")
-    parser.add_argument('--embedding_dim', type=int,
-                        default=128, help="Dimension of embedding.")
-    parser.add_argument('--item_count', type=int,
-                        default=1000, help="Number of items.")
-    parser.add_argument('--hidden_size', type=int,
-                        default=512, help="Dimension of hidden layer.")
-    parser.add_argument('--category_num', type=int,
-                        default=2, help="Number of category.")
-    parser.add_argument('--topic_num', type=int,
-                        default=10, help="Number of topics.")
-    parser.add_argument('--neg_num', type=int, default=10,
-                        help="Number of negative samples.")
-    parser.add_argument('--cpt_feat', type=int, default=1, help="")
-    parser.add_argument('--model_type', type=str, default='SINE',
-                        help='Name of model for recommendation system.')
-    parser.add_argument('--learning_rate', type=float, default=0.001,
-                        help='Learning rate of learning algorithm.')
-    parser.add_argument('--alpha', type=float, default=0.0, help='')
-    parser.add_argument('--batch_size', type=int,
-                        default=128, help='Size of mini-batch.')
-    parser.add_argument('--maxlen', type=int, default=20, help='Max length.')
-    parser.add_argument('--epoch', type=int, default=30,
-                        help='Number of epoches for training.')
-    parser.add_argument('--patience', type=int, default=5, help="")
-    parser.add_argument('--coef', default=None)
-    parser.add_argument('--test_iter', type=int, default=50,
-                        help="Iterations of test.")
-    parser.add_argument('--user_norm', type=int, default=0,
-                        help="Norm of user data.")
-    parser.add_argument('--item_norm', type=int, default=0,
-                        help="Norm of item data.")
-    parser.add_argument('--cate_norm', type=int, default=0,
-                        help="Norm of category.")
-    parser.add_argument('--n_head', type=int, default=1,
-                        help="Number of heads for attention.")
+    parser.add_argument(
+        "--config_file", default="./config/configurations.cfg", help="Parameter file address.")
     config = parser.parse_args()
 
+    config = Configurable(config_file=config.config_file)
     if config.init_seed:
-        init_seed()
+        init_seed(config.seed, config.cuda, config.gpus)
 
-    if not config.preprocess:
-        data_dir = os.path.join(config.datafile_dir, config.dataset)
-        raw_data_dir = os.path.join(data_dir, config.raw_data)
-        processed_data_dir = os.path.join(data_dir, config.processed_data)
+    main()
 
-        preprocess(raw_data_dir, processed_data_dir, config.dataset)
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ['CUDA_VISIBLE_DEVICES'] = config.gpu

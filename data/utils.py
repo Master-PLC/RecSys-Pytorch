@@ -125,6 +125,6 @@ def export_data(filename, user_seq, user_map, item_map, max_time=2):
 
 if __name__ == "__main__":
     raw_data_dir = "ml-1m/raw"
-    filter_size = 10
+    filter_size = 1
     processed_data_dir = "ml-1m/processed"
     preprocess_movielens(raw_data_dir, filter_size, processed_data_dir)
