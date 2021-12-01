@@ -8,6 +8,7 @@
 @Version      :1.0
 """
 
+import ast
 import os
 from configparser import ConfigParser
 
@@ -28,7 +29,7 @@ class Configurable(MyConfigParser):
         self._config = config
         self.config_file = config_file
 
-        print("config file is loaded sucessfully.")
+        print('---> Experiment configuration: ')
         self._config_show = config.getboolean("Data", "config_show")
         if self._config_show:
             for section in config.sections():
@@ -87,8 +88,13 @@ class Configurable(MyConfigParser):
 
     @property
     def test_fp(self):
-        test_fn = self._config.get("Data", "test_filname")
+        test_fn = self._config.get("Data", "test_filename")
         return os.path.join(self.processed_data_dir, test_fn)
+
+    @property
+    def noise_fp(self):
+        noise_fn = self._config.get("Data", "noise_filename")
+        return os.path.join(self.processed_data_dir, noise_fn)
 
     @property
     def shuffle(self):
@@ -176,9 +182,13 @@ class Configurable(MyConfigParser):
         return self._config.getfloat("Model", "cate_norm")
 
     @property
+    def noise_norm(self):
+        return self._config.getfloat("Model", "noise_norm")
+
+    @property
     def n_head(self):
         return self._config.getint("Model", "n_head")
-    
+
     @property
     def share_emb(self):
         return self._config.getboolean("Model", "share_emb")
@@ -186,6 +196,11 @@ class Configurable(MyConfigParser):
     @property
     def flag(self):
         return self._config.get("Model", "flag")
+
+    @property
+    def topk(self):
+        _str = self._config.get("Model", "topk")
+        return ast.literal_eval(_str)
 
     # Section: Optimizer
     @property
@@ -203,6 +218,19 @@ class Configurable(MyConfigParser):
     @property
     def weight_decay(self):
         return self._config.getfloat("Optimizer", "weight_decay")
+
+    # Section: Loss
+    @property
+    def nce(self):
+        return self._config.getboolean("Loss", "nce")
+
+    @property
+    def loss_type(self):
+        return self._config.get("Loss", "loss_type")
+
+    @property
+    def loss_function(self):
+        return self._config.get("Loss", "loss_function")
 
     # Section: Train
     @property

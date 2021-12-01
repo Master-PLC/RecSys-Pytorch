@@ -21,7 +21,7 @@ def init_seed(seed: int, cuda: bool, gpus: str) -> None:
     torch.manual_seed(seed)
 
     if cuda:
-        print("using GPU to train.")
+        print("---> GPUs are available for training...")
 
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ['CUDA_VISIBLE_DEVICES'] = gpus

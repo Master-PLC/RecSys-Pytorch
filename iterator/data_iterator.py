@@ -43,23 +43,29 @@ class DataIterator(Dataset):
 
     def __getitem__(self, idx):
         # if self.train_flag:
+        if self.seq_len != 1:
+            if idx + self.seq_len > self.__len__():
+                hist_item = torch.zeros(self.seq_len, self.maxlen)
+                nbr_mask = torch.zeros(self.seq_len, self.maxlen)
+                item_id = torch.zeros(self.seq_len, 1)
 
-        if idx + self.seq_len > self.__len__():
-            hist_item = torch.zeros(self.seq_len, self.maxlen)
-            nbr_mask = torch.zeros(self.seq_len, self.maxlen)
-            item_id = torch.zeros(self.seq_len, 1)
-
-            hist_item[:self.__len__() -
-                      idx] = torch.from_numpy(self.hist_item_list[idx:])
-            nbr_mask[:self.__len__() -
-                     idx] = torch.from_numpy(self.hist_mask_list[idx:])
-            item_id[:self.__len__()-idx] = torch.from_numpy(self.item_id_list[idx:])
+                hist_item[:self.__len__() -
+                          idx] = torch.from_numpy(self.hist_item_list[idx:])
+                nbr_mask[:self.__len__() -
+                         idx] = torch.from_numpy(self.hist_mask_list[idx:])
+                item_id[:self.__len__() -
+                        idx] = torch.from_numpy(self.item_id_list[idx:])
+            else:
+                hist_item = torch.from_numpy(
+                    self.hist_item_list[idx:idx+self.seq_len])
+                nbr_mask = torch.from_numpy(
+                    self.hist_mask_list[idx:idx+self.seq_len])
+                item_id = torch.from_numpy(
+                    self.item_id_list[idx:idx+self.seq_len])
         else:
-            hist_item = torch.from_numpy(
-                self.hist_item_list[idx:idx+self.seq_len])
-            nbr_mask = torch.from_numpy(
-                self.hist_mask_list[idx:idx+self.seq_len])
-            item_id = torch.from_numpy(self.item_id_list[idx:idx+self.seq_len])
+            hist_item = torch.from_numpy(self.hist_item_list[idx])
+            nbr_mask = torch.from_numpy(self.hist_mask_list[idx])
+            item_id = torch.from_numpy(self.item_id_list[idx].reshape(1))
 
         return hist_item, nbr_mask, item_id
 
@@ -110,7 +116,8 @@ class DataIterator(Dataset):
                     k = item_list.index(
                         [user_id_list[i], self.item_id_list[i], item_time_list[i]])
                 except ValueError:
-                    print(f"({user_id_list[i]},{self.item_id_list[i]},{item_time_list[i]})")
+                    print(
+                        f"({user_id_list[i]},{self.item_id_list[i]},{item_time_list[i]})")
                     print(item_list)
             else:
                 k = item_list.index(item_list[-1])

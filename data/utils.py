@@ -24,7 +24,9 @@ def check_dir(directory):
 
 def preprocess_movielens(raw_data_dir, filter_size, processed_data_dir):
     df_ratings, item_count, num_users = read_from_movielens(raw_data_dir)
-    item_map = filter_items(item_count, filter_size)
+    item_count, item_map, item_count_map = filter_items(item_count, filter_size)
+    # print(item_count)
+    # print(item_count_map)
     df_ratings, user_map = filter_users(
         df_ratings, item_map, num_users, filter_size)
 
@@ -33,6 +35,8 @@ def preprocess_movielens(raw_data_dir, filter_size, processed_data_dir):
     export_map(user_map_path, user_map)
     item_map_path = os.path.join(processed_data_dir, "item_map.json")
     export_map(item_map_path, item_map)
+    item_count_map_path = os.path.join(processed_data_dir, "item_count_map.json")
+    export_map(item_count_map_path, item_count_map)
     # print(item_map)
 
     for i, data_type in enumerate(DATA_TYPE):
@@ -59,10 +63,12 @@ def read_from_movielens(raw_data_dir):
 
 def filter_items(item_count, filter_size):
     item_total = len(item_count[item_count >= filter_size])
-    print(item_count.index[:item_total])
+    item_count = item_count[:item_total]
     item_map = dict(
-        zip(item_count.index[:item_total], list(range(item_total))))
-    return item_map
+        zip(item_count.index, list(range(item_total))))
+    item_count_map = dict(
+        zip(list(range(item_total)), item_count.values.tolist()))
+    return item_count, item_map, item_count_map
 
 
 def filter_users(df_ratings, item_map, num_users, filter_size):
