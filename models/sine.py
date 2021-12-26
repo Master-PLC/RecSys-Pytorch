@@ -79,7 +79,7 @@ class SINE(nn.Module):
         # Shape: [topic_num, embed_dim] = [10, 128] (for ml-1m data)
         self.topic_embedding = nn.Embedding(self.num_topic, self.dim)
         # self.topic_embed = torch.randn(
-        #     [self.num_topic, self.dim], requires_grad=True)
+        #     [self.num_top ic, self.dim], requires_grad=True)
 
         # Self attention for aggregation: hidden layer
         self.item_hidden_layer_aggre = nn.Sequential(
@@ -121,7 +121,7 @@ class SINE(nn.Module):
         self.wg_softmax_cpt2 = nn.Softmax(dim=1)
 
         self.criterion = NCELoss(config.noise, emb=self.output_item2(), bias=self.item_output_lookup_var,
-                                 num_sampled=self.neg_num*self.batch_size, noise_norm=config.noise_norm, reduction='none', loss_type=config.loss_type)
+                                 num_sampled=self.neg_num*self.batch_size, noise_norm=config.noise_norm, reduction='None', loss_type=config.loss_type)
 
     def forward(self, i_ids, item, nbr_mask):
         # Shape: [batch_size, 1] = [128, 1]
@@ -146,7 +146,7 @@ class SINE(nn.Module):
         loss = self._xent_loss_weight(self.user_eb, self.seq_multi)
 
         pass
-
+    
     def output_item2(self):
         if self.item_norm:
             item_emb = copy(self.item_output_embedding)
@@ -424,9 +424,11 @@ class SINE(nn.Module):
         return seq
 
     def _xent_loss_weight(self, user, seq_multi):
+        # user shape: [batch_size, embed_dim] = [128, 128]
+        # seq_multi shape: [batch_size, category_num, embed_dim] = [128, 2, 128]
         emb_dim = self.dim
         loss = self.criterion(self.i_ids.reshape(
-            [-1, 1]), user.reshape([-1, emb_dim]))
+            [-1, 1]), user.reshape([-1, emb_dim]), training=True)
 
         # Shape: [batch_size] = [128]
         regs = self.calculate_interest_loss(seq_multi)

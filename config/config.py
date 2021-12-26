@@ -31,6 +31,7 @@ class Configurable(MyConfigParser):
 
         print('---> Experiment configuration: ')
         self._config_show = config.getboolean("Data", "config_show")
+        self.sections = config.sections()
         if self._config_show:
             for section in config.sections():
                 print(f"[{section}]")

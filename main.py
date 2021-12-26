@@ -70,7 +70,7 @@ def update_arguments():
     if config.nce:
         with open(config.noise_fp, "r") as f:
             item_count = ujson.load(f)
-        freq = list(item_count.values)
+        freq = list(item_count.values())
         noise = build_unigram_noise(torch.FloatTensor(freq))
         config.noise = noise
 
@@ -110,6 +110,7 @@ def load_model(sample_dist=None):
 def train(model, train_loader, valid_loader, test_loader):
     # print("\n cpu_count \n", mu.cpu_count())
     # torch.set_num_threads(config.num_threads)
+
     print("---> Start training...")
     best_metric = 0
     best_metric_ndcg = 0
@@ -124,6 +125,7 @@ def train(model, train_loader, valid_loader, test_loader):
 
         print(f'---> Epoch {epoch}/{config.epochs}')
         step = 0
+        
         trials = 0
         iter = 0
         loss_iter = 0.0
@@ -153,11 +155,11 @@ def train(model, train_loader, valid_loader, test_loader):
 
         metrics = evaluate_full(None, test_loader, model, config.embedding_dim)
         for k in range(len(config.topk)):
-            print(f'!!!! Test result epoch {epoch} topk={config.topk[k]} hitrate={metrics['hitrate'][k]:.4f} ndcg={metrics['ndcg'][k]:.4f}')
+            print(f'!!!! Test result epoch {epoch} topk={config.topk[k]} hitrate={metrics["hitrate"][k]:.4f} ndcg={metrics["ndcg"][k]:.4f}')
         metrics = evaluate_full(
             None, valid_loader, model, config.embedding_dim)
         for k in range(len(config.topk)):
-            print(f'!!!! Validate result topk={config.topk[k]} hitrate={metrics['hitrate'][k]:.4f} ndcg={metrics['ndcg'][k]:.4f}')
+            print(f'!!!! Validate result topk={config.topk[k]} hitrate={metrics["hitrate"][k]:.4f} ndcg={metrics["ndcg"][k]:.4f}')
 
         if 'hitrate' in metrics:
             hitrate = metrics['hitrate'][0]
@@ -197,7 +199,7 @@ def test():
 
     metrics = evaluate_full(None, test_loader, model, config.embedding_dim)
     for k in range(len(config.topk)):
-        print(f'!!!! Test result topk={config.topk[k]} hitrate={metrics['hitrate'][k]:.4f} ndcg={metrics['ndcg'][k]:.4f}')
+        print(f'!!!! Test result topk={config.topk[k]} hitrate={metrics["hitrate"][k]:.4f} ndcg={metrics["ndcg"][k]:.4f}')
 
 
 def main():
@@ -207,16 +209,15 @@ def main():
 
     data_preprocess()
     update_arguments()
-    train_loader, valid_loader, test_loader = load_data()
-    if noise:
-        model = load_model(sample_dist=noise)
-    model = load_model()
-    train(model, train_loader, valid_loader, test_loader)
+    # print(config.noise)
+    # train_loader, valid_loader, test_loader = load_data()
+    # model = load_model()
+    # train(model, train_loader, valid_loader, test_loader)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Pytorch Practice of Recommendation Systems.")
+        description="Pytorch Practice of Recommendation Algorithms.")
     parser.add_argument(
         "--config_file", default="./config/configurations.cfg", help="Parameter file address.")
     config = parser.parse_args()
